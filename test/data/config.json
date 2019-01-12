@@ -1,0 +1,7 @@
+{
+  "EACH_LIMIT": 4,
+  "RATE_LIMIT": 250,
+  "SHOULD_USE_GOOGLE_DRIVE": false,
+  "SHOULD_DOWNLOAD_FILES": false,
+  "SHOULD_DOWNLOAD_XLSX": false
+}

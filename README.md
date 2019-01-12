@@ -1,4 +1,9 @@
 # podio-export
+[![Build Status](https://travis-ci.com/podio-export/podio-export.svg?branch=master)](https://travis-ci.com/podio-export/podio-export)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/2bd2fa4f433c4a438ce9b83d94ee24f0)](https://www.codacy.com/app/marcelobern/podio-export_podio-export?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=podio-export/podio-export&amp;utm_campaign=Badge_Grade)
+[![Coverage Status](https://coveralls.io/repos/github/podio-export/podio-export/badge.svg?branch=master)](https://coveralls.io/github/podio-export/podio-export?branch=master)
+[![Known Vulnerabilities](https://snyk.io/test/github/podio-export/podio-export/badge.svg?targetFile=package.json)](https://snyk.io/test/github/podio-export/podio-export?targetFile=package.json)
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fpodio-export%2Fpodio-export.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fpodio-export%2Fpodio-export?ref=badge_shield)
 
 > Export [Podio](https://podio.com/) data.
 

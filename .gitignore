@@ -1,7 +1,9 @@
 # Sensitive information
 secrets.json
 tmp
-podio-export*
+podio-export.zip
+podio-export/*
+test/podio-export/*
 
 # Logs
 logs

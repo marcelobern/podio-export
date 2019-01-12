@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 /* eslint-env node */
 'use strict';
 
@@ -9,54 +8,22 @@ const async = require('async');
 const mime = require('mime');
 const download = require('download');
 const RateLimiter = require('limiter').RateLimiter;
-const Podio = require('podio-js').api;
-const sessionStore = require('./sessionStore');
 
 const NUM_ITEMS = 'numItems';
 const TOTAL_ITEMS = 'totalItems';
 const NUM_FILES = 'numFiles';
 const DOWNLOADED_FILES = 'downloadedFiles';
 
-const {
-  CLIENT_ID,
-  CLIENT_SECRET,
-  USERNAME,
-  PASSWORD,
-} = require('./secrets.json');
 
-const {
-  RATE_LIMIT,
-  EACH_LIMIT,
-  SHOULD_DOWNLOAD_FILES,
-  SHOULD_DOWNLOAD_XLSX,
-} = require('./config.json');
 
-const shouldDownloadFiles = () => SHOULD_DOWNLOAD_FILES;
-
-var limiter = new RateLimiter(RATE_LIMIT, 'hour');
-
-var podio = new Podio({
-  authType: 'password',
-  clientId: CLIENT_ID,
-  clientSecret: CLIENT_SECRET
-},
-{
-  sessionStore,
 });
 
-const username = USERNAME;
-const password = PASSWORD;
-
-podio.isAuthenticated()
-  .then(() => {
-    // Ready to make API calls...
-    retrieveData();
-  }).catch(() => {
-    podio.authenticateWithCredentials(username, password, () => {
-      // Make API calls here...
-      retrieveData();
-    });
   });
+var exporter = {};
+
+const shouldUseGoogleDrive = () => exporter.config.SHOULD_USE_GOOGLE_DRIVE;
+const shouldDownloadFiles = () => exporter.config.SHOULD_DOWNLOAD_FILES;
+const shouldDownloadXlsx = () => exporter.config.SHOULD_DOWNLOAD_XLSX;
 
 const persistData = (basePath, filename, jsonData, callback) => {
   fse.ensureDir(basePath)
@@ -75,11 +42,14 @@ const persistData = (basePath, filename, jsonData, callback) => {
 };
 
 
-const retrieveData = () => {
-  const basePath = path.join(__dirname, 'podio-export', USERNAME.replace('@', '_at_'));
+exporter.retrieveData = (podioServer, username, config) => {
+  exporter.podio = podioServer;
+  exporter.config = config;
+  exporter.limiter = new RateLimiter(exporter.config.RATE_LIMIT, 'hour');
+  const basePath = path.join(__dirname, 'podio-export');
   const flag = true;
   if (flag) {
-    retrieveOrgs(basePath, (err, result) => {
+    exporter.retrieveOrgs(basePath, username, (err, result) => {
       console.log(`podio-export result: ${JSON.stringify(result, null, ' ')}`);
       if (err) console.error(`podio-export ${err}`);
     });
@@ -87,36 +57,38 @@ const retrieveData = () => {
   }
 };
 
-const retrieveOrgs = (basePath, callback) => {
+exporter.retrieveOrgs = (exportPath, username, callback) => {
+  const basePath = path.join(exportPath, username.replace('@', '_at_'));
+
   var summary = {
-    [USERNAME]: {},
+    [username]: {},
   };
 
   async.waterfall([
     (callback) => {
-      podio.request('GET', '/org/')
+      exporter.podio.request('GET', '/org/')
         .then(responseData => callback(null, responseData))
         .catch(callback);
     },
     (orgs, callback) => {
       async.each(orgs, (org, callback) => {
         const orgPath = path.join(basePath, `${org.name}`);
-        summary[USERNAME][org.name] = {};
+        summary[username][org.name] = {};
         async.parallel({
           [`${org.name}.json`]: (callback) => {
             persistData(orgPath, `${org.name}.json`, org, callback);
           },
           [`${org.name}-tasks`]: (callback) => {
-            retrieveTasks(org.org_id, orgPath, summary[USERNAME][org.name], callback);
+            exporter.retrieveTasks(org.org_id, orgPath, summary[username][org.name], callback);
           },
           [`${org.name}-spaces`]: (callback) => {
-            retrieveSpaces(org.org_id, orgPath, summary[USERNAME][org.name], callback);
+            exporter.retrieveSpaces(org.org_id, orgPath, summary[username][org.name], callback);
           }
         }, callback);
       }, callback);
     },
     (callback) => {
-      retrieveContacts(basePath, summary[USERNAME], callback);
+      exporter.retrieveContacts(basePath, summary[username], callback);
     },
     (callback) => {
       persistData(basePath, 'summary.json', summary, () => {
@@ -142,10 +114,10 @@ const retrieveOrgs = (basePath, callback) => {
   ], callback);
 };
 
-const retrieveSpaces = (orgId, orgPath, orgSummary, callback) => {
+exporter.retrieveSpaces = (orgId, orgPath, orgSummary, callback) => {
   async.waterfall([
     (callback) => {
-      podio.request('GET', `/space/org/${orgId}/`)
+      exporter.podio.request('GET', `/space/org/${orgId}/`)
         .then(responseData => callback(null, responseData))
         .catch(callback);
     },
@@ -158,7 +130,7 @@ const retrieveSpaces = (orgId, orgPath, orgSummary, callback) => {
           },
           [`${space.name}-apps`]: (callback) => {
             orgSummary[space.name] = {};
-            retrieveApps(space.space_id, spacePath, orgSummary[space.name], callback);
+            exporter.retrieveApps(space.space_id, spacePath, orgSummary[space.name], callback);
           }
         }, callback);
       }, callback);
@@ -166,10 +138,10 @@ const retrieveSpaces = (orgId, orgPath, orgSummary, callback) => {
   ], callback);
 };
 
-const retrieveApps = (spaceId, spacePath, spaceSummary, callback) => {
+exporter.retrieveApps = (spaceId, spacePath, spaceSummary, callback) => {
   async.waterfall([
     (callback) => {
-      podio.request('GET', `/app/space/${spaceId}/`)
+      exporter.podio.request('GET', `/app/space/${spaceId}/`)
         .then(responseData => callback(null, responseData))
         .catch(callback);
     },
@@ -182,10 +154,10 @@ const retrieveApps = (spaceId, spacePath, spaceSummary, callback) => {
             persistData(appPath, `${app.config.name}.json`, app, callback);
           },
           [`${app.config.name}-items`]: (callback) => {
-            retrieveItems(app.app_id, appPath, spaceSummary[app.config.name], callback);
+            exporter.retrieveItems(app.app_id, appPath, spaceSummary[app.config.name], callback);
           },
           [`${app.config.name}-files`]: (callback) => {
-            retrieveFiles(`/file/app/${app.app_id}/`, appPath, spaceSummary[app.config.name], callback);
+            exporter.retrieveFiles(`/file/app/${app.app_id}/`, appPath, spaceSummary[app.config.name], callback);
           }
         }, callback);
       }, callback);
@@ -195,7 +167,7 @@ const retrieveApps = (spaceId, spacePath, spaceSummary, callback) => {
 
 const buildRange = (offset, count) => `${offset+1}-${offset+count}`;
 
-const retrieveItems = (appId, appPath, appSummary, callback) => {
+exporter.retrieveItems = (appId, appPath, appSummary, callback) => {
   const limit = 500; // TODO: move to config
   const itemsFilename = (offset, count) => `items_${buildRange(offset, count)}.json`;
 
@@ -210,9 +182,9 @@ const retrieveItems = (appId, appPath, appSummary, callback) => {
 
   async.waterfall([
     (callback) => {
-      limiter.removeTokens(1, () => {
+      exporter.limiter.removeTokens(1, () => {
         const offset = 0;
-        podio.request('POST', `/item/app/${appId}/filter/`, { offset, limit })
+        exporter.podio.request('POST', `/item/app/${appId}/filter/`, { offset, limit })
           .then(responseData => {
             appSummary[NUM_ITEMS] = responseData.items.length;
             appSummary[TOTAL_ITEMS] = responseData.total;
@@ -226,9 +198,9 @@ const retrieveItems = (appId, appPath, appSummary, callback) => {
       });
     },
     (offsets, callback) => {
-      async.eachLimit(offsets, EACH_LIMIT, (offset, callback) => {
-        limiter.removeTokens(1, () => {
-          podio.request('POST', `/item/app/${appId}/filter/`, { offset, limit })
+      async.eachLimit(offsets, exporter.config.EACH_LIMIT, (offset, callback) => {
+        exporter.limiter.removeTokens(1, () => {
+          exporter.podio.request('POST', `/item/app/${appId}/filter/`, { offset, limit })
             .then(responseData => {
               appSummary[NUM_ITEMS] += responseData.items.length;
               if (appSummary[TOTAL_ITEMS] !== responseData.total) {
@@ -243,7 +215,7 @@ const retrieveItems = (appId, appPath, appSummary, callback) => {
   ], callback);
 };
 
-const retrieveTasks = (orgId, orgPath, orgSummary, callback) => {
+exporter.retrieveTasks = (orgId, orgPath, orgSummary, callback) => {
   const limit = 100; // TODO: move to config
   const tasksFilename = (offset, count) => `tasks_${buildRange(offset, count)}.json`;
   var offset = 0;
@@ -253,8 +225,8 @@ const retrieveTasks = (orgId, orgPath, orgSummary, callback) => {
   async.whilst(
     () => responseSize === limit,
     (callback) => {
-      limiter.removeTokens(1, () => {
-        podio.request('GET', '/task/', { org: orgId, offset, limit })
+      exporter.limiter.removeTokens(1, () => {
+        exporter.podio.request('GET', '/task/', { org: orgId, offset, limit })
           .then(responseData => {
             responseSize = responseData.length;
             orgSummary.numTasks += responseSize;
@@ -271,9 +243,9 @@ const retrieveTasks = (orgId, orgPath, orgSummary, callback) => {
     callback);
 };
 
-const retrieveFiles = (url, path, summary, callback) => {
+exporter.retrieveFiles = (url, path, summary, callback) => {
   const limit = 100; // TODO: move to config
-  const tasksFilename = (offset, count) => `files_${buildRange(offset, count)}.json`;
+  const filesFilename = (offset, count) => `files_${buildRange(offset, count)}.json`;
   var offset = 0;
   var responseSize = limit;
   summary[NUM_FILES] = 0;
@@ -282,20 +254,20 @@ const retrieveFiles = (url, path, summary, callback) => {
   async.whilst(
     () => responseSize === limit,
     (callback) => {
-      podio.request('GET', url, { offset, limit })
+      exporter.podio.request('GET', url, { offset, limit })
         .then(responseData => {
           responseSize = responseData.length;
           summary[NUM_FILES] += responseSize;
           if (responseSize > 0) {
             async.parallel({
               ['files_X-Y.json']: (callback) => {
-                persistData(path, tasksFilename(offset, responseSize), responseData, (err) => {
+                persistData(path, filesFilename(offset, responseSize), responseData, (err) => {
                   offset += limit;
                   callback(err);
                 });
               },
               ['./files']: (callback) => {
-                downloadFiles(responseData, path, summary, callback);
+                exporter.downloadFiles(responseData, path, summary, callback);
               }
             }, callback);
           } else callback(null);
@@ -305,18 +277,18 @@ const retrieveFiles = (url, path, summary, callback) => {
     callback);
 };
 
-const downloadFiles = (files, basePath, summary, callback) => {
+exporter.downloadFiles = (files, basePath, summary, callback) => {
   if (!shouldDownloadFiles()) return callback(null);
   const filePath = path.join(basePath, 'files');
   fse.ensureDir(filePath)
     .then(() => {
-      async.eachLimit(files, EACH_LIMIT, (file, callback) => {
+      async.eachLimit(files, exporter.config.EACH_LIMIT, (file, callback) => {
         const filename = path.format({
           dir: filePath,
           name: file.file_id,
           ext: `.${mime.getExtension(file.mimetype)}`
         });
-        downloadFile(file.link, filename, (err) => {
+        exporter.downloadFile(file.link, filename, (err) => {
           if (!err) summary[DOWNLOADED_FILES] += 1;
           callback(err);
         });
@@ -325,7 +297,7 @@ const downloadFiles = (files, basePath, summary, callback) => {
     .catch(callback);
 };
 
-const retrieveContacts = (path, summary, callback) => {
+exporter.retrieveContacts = (path, summary, callback) => {
   const limit = 500; // TODO: move to config
   const contactsFilename = (offset, count) => `contacts_${buildRange(offset, count)}.json`;
   var offset = 0;
@@ -335,7 +307,7 @@ const retrieveContacts = (path, summary, callback) => {
   async.whilst(
     () => responseSize === limit,
     (callback) => {
-      podio.request('GET', '/contact/', { offset, limit })
+      exporter.podio.request('GET', '/contact/', { offset, limit })
         .then(responseData => {
           responseSize = responseData.length;
           summary.numContacts += responseSize;
@@ -351,10 +323,10 @@ const retrieveContacts = (path, summary, callback) => {
     callback);
 };
 
-const downloadFile = (url, filename, callback) => {
-  limiter.removeTokens(1, () => {
+exporter.downloadFile = (url, filename, callback) => {
+  exporter.limiter.removeTokens(1, () => {
     // https://stackoverflow.com/questions/38130128/podio-file-attached-to-item-cannot-be-downloaded
-    download(`${url}?oauth_token=${podio.authObject.accessToken}`)
+    download(`${url}?oauth_token=${exporter.podio.authObject.accessToken}`)
       .pipe(fs.createWriteStream(filename))
       .on('warning', (err) => {
         // good practice to catch warnings (ie stat failures and other non-blocking errors)
@@ -370,3 +342,5 @@ const downloadFile = (url, filename, callback) => {
       });
   });
 };
+
+module.exports = exporter;
