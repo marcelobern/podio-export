@@ -13,12 +13,6 @@ const NUM_ITEMS = 'numItems';
 const TOTAL_ITEMS = 'totalItems';
 const NUM_FILES = 'numFiles';
 const DOWNLOADED_FILES = 'downloadedFiles';
-
-
-
-});
-
-  });
 var exporter = {};
 
 const shouldUseGoogleDrive = () => exporter.config.SHOULD_USE_GOOGLE_DRIVE;
