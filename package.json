@@ -19,7 +19,9 @@
   ],
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint .",
+    "test": "mocha",
+    "test-with-coverage": "nyc npm test && nyc report --reporter=text-lcov > ./lcov.info",
     "podio-export": "node ./bin/podio-export.js"
   },
   "dependencies": {
