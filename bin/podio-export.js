@@ -28,7 +28,7 @@ podio.isAuthenticated()
   .then(() => {
     // Ready to make API calls...
     podioExporter.retrieveData(podio, USERNAME, CONFIG);
-  }).catch((err) => {
+  }).catch(() => {
     podio.authenticateWithCredentials(USERNAME, PASSWORD, () => {
       // Make API calls here...
       podioExporter.retrieveData(podio, USERNAME, CONFIG);
