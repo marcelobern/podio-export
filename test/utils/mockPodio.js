@@ -69,7 +69,7 @@ module.exports = {
         ]);
         break;
       default:
-        console.log(path);
+        console.log(path); // eslint-disable-line no-console
         reject({});
       }
     });

@@ -15,9 +15,7 @@ const NUM_FILES = 'numFiles';
 const DOWNLOADED_FILES = 'downloadedFiles';
 var exporter = {};
 
-const shouldUseGoogleDrive = () => exporter.config.SHOULD_USE_GOOGLE_DRIVE;
 const shouldDownloadFiles = () => exporter.config.SHOULD_DOWNLOAD_FILES;
-const shouldDownloadXlsx = () => exporter.config.SHOULD_DOWNLOAD_XLSX;
 
 const persistData = (basePath, filename, jsonData, callback) => {
   fse.ensureDir(basePath)
@@ -28,7 +26,7 @@ const persistData = (basePath, filename, jsonData, callback) => {
         if (err) {
           callback(new Error(`Writing to ${fullPath} failed: ${err}`));
         }
-        console.log(`Exported ${fullPath.replace(`${__dirname}/`, '')}`);
+        console.log(`Exported ${fullPath.replace(`${__dirname}/`, '')}`); // eslint-disable-line no-console
         callback(null);
       });
     })
@@ -44,10 +42,9 @@ exporter.retrieveData = (podioServer, username, config) => {
   const flag = true;
   if (flag) {
     exporter.retrieveOrgs(basePath, username, (err, result) => {
-      console.log(`podio-export result: ${JSON.stringify(result, null, ' ')}`);
-      if (err) console.error(`podio-export ${err}`);
+      console.log(`podio-export result: ${JSON.stringify(result, null, ' ')}`); // eslint-disable-line no-console
+      if (err) console.error(`podio-export ${err}`); // eslint-disable-line no-console
     });
-  } else {
   }
 };
 
@@ -326,13 +323,13 @@ exporter.downloadFile = (url, filename, callback) => {
         // good practice to catch warnings (ie stat failures and other non-blocking errors)
         if (err.code === 'ENOENT') {
           // log warning
-          console.warn(err);
+          console.warn(err); // eslint-disable-line no-console
         } else callback(err);
       })
       .on('error', callback)
       .on('finish', () => {
         callback(null);
-        console.log(`Downloaded ${filename.replace(`${__dirname}/`, '')}`);
+        console.log(`Downloaded ${filename.replace(`${__dirname}/`, '')}`); // eslint-disable-line no-console
       });
   });
 };

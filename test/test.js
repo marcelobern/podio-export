@@ -1,20 +1,9 @@
 /* eslint-env mocha */
 'use strict';
 
-const fs = require('fs');
 const path = require('path');
 const RateLimiter = require('limiter').RateLimiter;
 
-var shouldCapture = (testType) => ['capture'].includes(testType);
-var shouldMock = (testType) => ['unit'].includes(testType);
-
-/*
- * Configurable test suite parameters
- */
-const TEST_TYPE = ['unit', 'integration', 'capture'].includes(process.env.TEST_TYPE) ? process.env.TEST_TYPE : 'integration';
-// TEST_TYPE = 'unit' will run unit tests locally (completes in milliseconds). This is the default value.
-// TEST_TYPE = 'integration' will run integration tests against local filesystem (completes in milliseconds).
-// TEST_TYPE = 'capture' same as integration plus will capture the responses for future unit tests.
 
 const sinon = require('sinon');
 const chai = require('chai');
@@ -25,7 +14,6 @@ chai.use(sinonChai);
 const expect = chai.expect;
 chai.config.includeStack = true;
 
-const Response = require('responselike');
 const podio = require('./utils/mockPodio');
 const testData = {
   config: require('./data/config.json'),
