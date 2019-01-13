@@ -17,7 +17,7 @@ var exporter = {};
 
 const shouldDownloadFiles = () => exporter.config.SHOULD_DOWNLOAD_FILES;
 
-const persistData = (basePath, filename, jsonData, callback) => {
+exporter.persistData = (basePath, filename, jsonData, callback) => {
   fse.ensureDir(basePath)
     .then(() => {
       var fullPath = path.join(basePath, filename);
@@ -25,9 +25,10 @@ const persistData = (basePath, filename, jsonData, callback) => {
       fs.writeFile(fullPath, JSON.stringify(jsonData, null, ' '), 'utf8', function(err) {
         if (err) {
           callback(new Error(`Writing to ${fullPath} failed: ${err}`));
+        } else {
+          console.log(`Exported ${fullPath.replace(`${__dirname}/`, '')}`); // eslint-disable-line no-console
+          callback(null);
         }
-        console.log(`Exported ${fullPath.replace(`${__dirname}/`, '')}`); // eslint-disable-line no-console
-        callback(null);
       });
     })
     .catch(callback);
@@ -39,13 +40,10 @@ exporter.retrieveData = (podioServer, username, config) => {
   exporter.config = config;
   exporter.limiter = new RateLimiter(exporter.config.RATE_LIMIT, 'hour');
   const basePath = path.join(__dirname, 'podio-export');
-  const flag = true;
-  if (flag) {
     exporter.retrieveOrgs(basePath, username, (err, result) => {
       console.log(`podio-export result: ${JSON.stringify(result, null, ' ')}`); // eslint-disable-line no-console
       if (err) console.error(`podio-export ${err}`); // eslint-disable-line no-console
     });
-  }
 };
 
 exporter.retrieveOrgs = (exportPath, username, callback) => {
@@ -67,7 +65,7 @@ exporter.retrieveOrgs = (exportPath, username, callback) => {
         summary[username][org.name] = {};
         async.parallel({
           [`${org.name}.json`]: (callback) => {
-            persistData(orgPath, `${org.name}.json`, org, callback);
+            exporter.persistData(orgPath, `${org.name}.json`, org, callback);
           },
           [`${org.name}-tasks`]: (callback) => {
             exporter.retrieveTasks(org.org_id, orgPath, summary[username][org.name], callback);
@@ -82,7 +80,7 @@ exporter.retrieveOrgs = (exportPath, username, callback) => {
       exporter.retrieveContacts(basePath, summary[username], callback);
     },
     (callback) => {
-      persistData(basePath, 'summary.json', summary, () => {
+      exporter.persistData(basePath, 'summary.json', summary, () => {
         const checkProperties = (object, propertyA, propertyB) => {
           var result = null;
           for (var element in object) {
@@ -117,7 +115,7 @@ exporter.retrieveSpaces = (orgId, orgPath, orgSummary, callback) => {
         const spacePath = path.join(orgPath, `${space.name}`);
         async.parallel({
           [`${space.name}.json`]: (callback) => {
-            persistData(spacePath, `${space.name}.json`, space, callback);
+            exporter.persistData(spacePath, `${space.name}.json`, space, callback);
           },
           [`${space.name}-apps`]: (callback) => {
             orgSummary[space.name] = {};
@@ -142,7 +140,7 @@ exporter.retrieveApps = (spaceId, spacePath, spaceSummary, callback) => {
         spaceSummary[app.config.name] = {};
         async.parallel({
           [`${app.config.name}.json`]: (callback) => {
-            persistData(appPath, `${app.config.name}.json`, app, callback);
+            exporter.persistData(appPath, `${app.config.name}.json`, app, callback);
           },
           [`${app.config.name}-items`]: (callback) => {
             exporter.retrieveItems(app.app_id, appPath, spaceSummary[app.config.name], callback);
@@ -180,7 +178,7 @@ exporter.retrieveItems = (appId, appPath, appSummary, callback) => {
             appSummary[NUM_ITEMS] = responseData.items.length;
             appSummary[TOTAL_ITEMS] = responseData.total;
             if (responseData.items.length > 0) {
-              persistData(appPath, itemsFilename(offset, responseData.items.length), responseData, (err) => {
+              exporter.persistData(appPath, itemsFilename(offset, responseData.items.length), responseData, (err) => {
                 callback(err, calculateOffsets(responseData.items.length, responseData.total, limit));
               });
             } else callback(null, []);
@@ -197,7 +195,7 @@ exporter.retrieveItems = (appId, appPath, appSummary, callback) => {
               if (appSummary[TOTAL_ITEMS] !== responseData.total) {
                 callback(new Error('Items might have been created/deleted while exporting. Aborting!'));
               }
-              persistData(appPath, itemsFilename(offset, responseData.items.length), responseData, callback);
+              exporter.persistData(appPath, itemsFilename(offset, responseData.items.length), responseData, callback);
             })
             .catch(callback);
         });
@@ -222,7 +220,7 @@ exporter.retrieveTasks = (orgId, orgPath, orgSummary, callback) => {
             responseSize = responseData.length;
             orgSummary.numTasks += responseSize;
             if (responseSize > 0) {
-              persistData(orgPath, tasksFilename(offset, responseSize), responseData, (err) => {
+              exporter.persistData(orgPath, tasksFilename(offset, responseSize), responseData, (err) => {
                 offset += limit;
                 callback(err);
               });
@@ -252,7 +250,7 @@ exporter.retrieveFiles = (url, path, summary, callback) => {
           if (responseSize > 0) {
             async.parallel({
               ['files_X-Y.json']: (callback) => {
-                persistData(path, filesFilename(offset, responseSize), responseData, (err) => {
+                exporter.persistData(path, filesFilename(offset, responseSize), responseData, (err) => {
                   offset += limit;
                   callback(err);
                 });
@@ -303,7 +301,7 @@ exporter.retrieveContacts = (path, summary, callback) => {
           responseSize = responseData.length;
           summary.numContacts += responseSize;
           if (responseSize > 0) {
-            persistData(path, contactsFilename(offset, responseSize), responseData, (err) => {
+            exporter.persistData(path, contactsFilename(offset, responseSize), responseData, (err) => {
               offset += limit;
               callback(err);
             });

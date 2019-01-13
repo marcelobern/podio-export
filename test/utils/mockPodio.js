@@ -57,11 +57,6 @@ module.exports = {
           },
         ]);
         break;
-      case '/mockFile/':
-        resolve({
-          file: 1,
-        });
-        break;
       case '/contact/':
         resolve([
           {contact: 1},
