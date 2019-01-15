@@ -1,6 +1,7 @@
 /* eslint-env mocha */
 'use strict';
 
+const fs = require('fs');
 const path = require('path');
 const RateLimiter = require('limiter').RateLimiter;
 
