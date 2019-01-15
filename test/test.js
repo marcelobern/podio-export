@@ -59,22 +59,25 @@ describe('podio-export', function() {
       podioExporter.retrieveOrgs(
         path.join(__dirname, 'podio-export'),
         testData.username,
-        (err, result) => done(!expect(result).to.deep.equal({
-          'mocha-test': {
-            'myOrg': {
-              'numTasks': 2,
-              'myWorkspace': {
-                'myApp': {
-                  'numFiles': 2,
-                  'downloadedFiles': 0,
-                  'numItems': 2,
-                  'totalItems': 2
+        (err, result) => {
+          expect(result).to.deep.equal({
+            'mocha-test': {
+              'myOrg': {
+                'numTasks': 2,
+                'myWorkspace': {
+                  'myApp': {
+                    'numFiles': 2,
+                    'downloadedFiles': 0,
+                    'numItems': 2,
+                    'totalItems': 2
+                  }
                 }
-              }
-            },
-            'numContacts': 2
-          }
-        }))
+              },
+              'numContacts': 2
+            }
+          });
+          done();
+        }
       );
     });
 
@@ -83,22 +86,25 @@ describe('podio-export', function() {
       podioExporter.retrieveOrgs(
         path.join(__dirname, 'podio-export'),
         `${testData.username}-download`,
-        (err, result) => done(!expect(result).to.deep.equal({
-          'mocha-test-download': {
-            'myOrg': {
-              'numTasks': 2,
-              'myWorkspace': {
-                'myApp': {
-                  'numFiles': 2,
-                  'downloadedFiles': 2,
-                  'numItems': 2,
-                  'totalItems': 2
+        (err, result) => {
+          expect(result).to.deep.equal({
+            'mocha-test-download': {
+              'myOrg': {
+                'numTasks': 2,
+                'myWorkspace': {
+                  'myApp': {
+                    'numFiles': 2,
+                    'downloadedFiles': 2,
+                    'numItems': 2,
+                    'totalItems': 2
+                  }
                 }
-              }
-            },
-            'numContacts': 2
-          }
-        }))
+              },
+              'numContacts': 2
+            }
+          });
+          done();
+        }
       );
     });
 
@@ -117,7 +123,8 @@ describe('podio-export', function() {
         `${testData.username}`,
         (err) => {
           podioExporter.persistData.restore();
-          return done(!expect(err).to.be.instanceOf(Error));
+          expect(err).to.be.instanceOf(Error);
+          done();
         }
       );
     });
@@ -137,7 +144,8 @@ describe('podio-export', function() {
         `${testData.username}`,
         (err) => {
           podioExporter.persistData.restore();
-          return done(!expect(err).to.be.instanceOf(Error));
+          expect(err).to.be.instanceOf(Error);
+          done();
         }
       );
     });
@@ -163,10 +171,13 @@ describe('podio-export', function() {
         'appId',
         path.join(__dirname, 'podio-export', 'unit-test', 'orgId', 'appPath'),
         summary,
-        () => done(!expect(summary).to.deep.equal({
-          numItems: LENGTH,
-          totalItems: LENGTH,
-        }))
+        () => {
+          expect(summary).to.deep.equal({
+            numItems: LENGTH,
+            totalItems: LENGTH,
+          });
+          done();
+        }
       );
     });
 
@@ -189,7 +200,10 @@ describe('podio-export', function() {
         'appId',
         path.join(__dirname, 'podio-export', 'unit-test', 'orgId', 'appPath'),
         summary,
-        (err) => done(!expect(err).to.be.instanceOf(Error))
+        (err) => {
+          expect(err).to.be.instanceOf(Error);
+          done();
+        }
       );
     });
 
@@ -205,10 +219,13 @@ describe('podio-export', function() {
         'dummy',
         'dummy',
         summary,
-        () => done(!expect(summary).to.deep.equal({
-          numItems: 0,
-          totalItems: 0,
-        }))
+        () => {
+          expect(summary).to.deep.equal({
+            numItems: 0,
+            totalItems: 0,
+          });
+          done();
+        }
       );
     });
   });
@@ -223,7 +240,10 @@ describe('podio-export', function() {
         'dummy',
         'dummy',
         summary,
-        () => done(!expect(summary).to.deep.equal({ numTasks: 0 }))
+        () => {
+          expect(summary).to.deep.equal({ numTasks: 0 });
+          done();
+        }
       );
     });
   });
@@ -238,10 +258,13 @@ describe('podio-export', function() {
         'dummy',
         'dummy',
         summary,
-        () => done(!expect(summary).to.deep.equal({
-          numFiles: 0,
-          downloadedFiles: 0,
-        }))
+        () => {
+          expect(summary).to.deep.equal({
+            numFiles: 0,
+            downloadedFiles: 0,
+          });
+          done();
+        }
       );
     });
   });
@@ -255,7 +278,10 @@ describe('podio-export', function() {
       podioExporter.retrieveContacts(
         'dummy',
         summary,
-        () => done(!expect(summary).to.deep.equal({ numContacts: 0 }))
+        () => {
+          expect(summary).to.deep.equal({ numContacts: 0 });
+          done();
+        }
       );
     });
   });
@@ -284,7 +310,8 @@ describe('podio-export', function() {
         {},
         (err) => {
           podioExporter.downloadFile.restore();
-          return done(!expect(err).to.be.instanceOf(Error));
+          expect(err).to.be.instanceOf(Error);
+          done();
         }
       );
     });
@@ -299,7 +326,10 @@ describe('podio-export', function() {
         path.join(__dirname, 'podio-export', 'unit-test'),
         'errorHandlingTest.json',
         {},
-        (err) => done(!expect(err).to.be.instanceOf(Error))
+        (err) => {
+          expect(err).to.be.instanceOf(Error);
+          done();
+        }
       );
     });
   });
