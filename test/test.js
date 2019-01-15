@@ -23,7 +23,7 @@ const testData = {
 const podioExporter = require('../index');
 
 describe('podio-export', function() {
-  describe('#retrieveData()', function() {
+  describe.skip('#retrieveData()', function() {
     beforeEach(function() {
       sinon.spy(console, 'error');
     });
